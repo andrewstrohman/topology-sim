@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+
+set type [lindex $argv 0];
+set host [lindex $argv 1];
+set tty [lindex $argv 2];
+set namespace [lindex $argv 2];
+set pod_name [lindex $argv 2];
+
+
+if {$type == "configure"} {
+	spawn scp /tmp/$pod_name.tar.gz root@$host:/tmp
+	expect "@"
+}
+
+spawn ssh $host -l root
+expect "root@"
+if {$type == "serial"} {
+	send "screen -x $tty\r"
+	expect -re "screen.*root@"
+	set command_output $expect_out(0,string)
+	if {[string match "*There is no screen to be attached matching*" $command_output]} {
+		send "screen -S $tty /dev/$tty 115200\r"
+	}
+	interact
+} elseif {$type == "ns"} {
+	send "ip netns exec $namespace sh\r"
+	expect "root@"
+	interact
+} elseif {$type == "configure"} {
+	send "cd /tmp\n"
+	expect "root@"
+	send "tar -zxvf $pod_name.tar.gz\r"
+	expect "root@"
+	send "cd $pod_name\r"
+	expect "root@"
+ 	send "cat config.json | python3 changer.py\r"
+	expect "root@"
+	send "exit"
+} else {
+	interact
+}

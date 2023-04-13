@@ -1,0 +1,11 @@
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -2398,7 +2398,7 @@ mt7531_setup(struct dsa_switch *ds)
+ 		break;
+ 	}
+ 	mt7530_rmw(priv, MT753X_BPC, MT753X_BPDU_PORT_FW_MASK,
+-		   MT753X_BPDU_CPU_ONLY);
++		   MT753X_BPDU_FOLLOW_MFC);
+ 
+ 	/* Enable and reset MIB counters */
+ 	mt7530_mib_reset(ds);
