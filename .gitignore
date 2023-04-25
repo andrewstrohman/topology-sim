@@ -1,3 +1,4 @@
 config.yaml
 hardware.yaml
 *.swp
+__pycache__
