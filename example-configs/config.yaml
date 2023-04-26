@@ -1,0 +1,43 @@
+bridges:
+  eth_cable_1:
+    members:
+      - type: dut
+        dut_name: bedroom_client-a1
+        dut_port: eth0
+      - type: dut
+        dut_name: bedroom_model-h
+        dut_port: eth2
+    wan: null
+  eth_cable_2:
+    members:
+      - type: dut
+        dut_name: bedroom_client-a2
+        dut_port: eth0
+      - type: dut
+        dut_name: bedroom_model-h
+        dut_port: eth3
+    wan: null
+  eth_switch_2:
+    members:
+      - type: dut
+        dut_name: office_model-j
+        dut_port: eth0
+      - type: dut
+        dut_name: bedroom_model-h
+        dut_port: eth4
+      - type: dut
+        dut_name: garage_model-a
+        dut_port: eth1
+    wan: null
+  internet_connection:
+    members:
+      - type: dut
+        dut_name: bedroom_model-h
+        dut_port: eth10
+    wan: bedroom1
+sim_wireless_clients:
+  - pod: bedroom4
+    phy: phy1
+    namespace: bedroom_5G
+power_on:
+  - garage_model-e

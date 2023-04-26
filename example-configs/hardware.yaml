@@ -1,0 +1,231 @@
+sites:
+  bedroom:
+    tunneling_pod: bedroom1
+    pods:
+      bedroom4:
+        host: 192.168.78.187
+        trunk_ports:
+          - wan
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+        ethernet:
+          lan1:
+            dut_name: bedroom_model-d
+            dut_port: eth1
+          lan2:
+            dut_name: bedroom_model-d
+            dut_port: eth0
+          lan3:
+            dut_name: bedroom_model-g
+            dut_port: eth0
+          lan4:
+            dut_name: bedroom_model-g
+            dut_port: eth1
+        phy:
+          phy0:
+            band: 2
+          phy1:
+            band: 5
+      bedroom3:
+        host: 192.168.78.20
+        trunk_ports:
+          - wan
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+        ethernet:
+          lan1:
+            dut_name: bedroom_model-h
+            dut_port: eth3
+          lan2:
+            dut_name: bedroom_model-f
+            dut_port: eth0
+          lan3:
+            dut_name: bedroom_model-f
+            dut_port: eth1
+          lan4:
+            dut_name: bedroom_model-h
+            dut_port: eth4
+        phy:
+          phy0:
+            band: 2
+          phy1:
+            band: 5
+      bedroom2:
+        host: 192.168.78.90
+        trunk_ports:
+          - wan
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+        ethernet:
+          lan1:
+            dut_name: bedroom_model-i
+            dut_port: eth0
+          lan2:
+            dut_name: bedroom_client-a1
+            dut_port: eth0
+          lan3:
+            dut_name: bedroom_client-a2
+            dut_port: eth0
+          lan4:
+            dut_name: bedroom_model-h
+            dut_port: eth2
+        phy:
+          phy0:
+            band: 2
+          phy1:
+            band: 5
+      bedroom1:
+        host: 192.168.78.99
+        trunk_ports:
+          - wan
+          - lan2
+          - lan3
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+            - mesh0
+            - lan2
+            - lan3
+            - lan4
+        ethernet:
+          lan1:
+            dut_name: bedroom_model-h
+            dut_port: eth10
+        phy:
+          phy0:
+            band: 2
+        serial:
+          ttyUSB0:
+            dut_name: bedroom_model-f
+          ttyUSB1:
+            dut_name: bedroom_model-h
+  garage:
+    tunneling_pod: garage1
+    pods:
+      garage1:
+        host: 192.168.78.48
+        trunk_ports: []
+        wan_bridge:
+          name: br-lan
+          members:
+            - mesh0
+            - wan
+        ethernet:
+          lan1:
+            dut_name: garage_model-f
+            dut_port: eth1
+          lan2:
+            dut_name: garage_model-b
+            dut_port: eth0
+          lan3:
+            dut_name: garage_model-a
+            dut_port: eth1
+          lan4:
+            dut_name: garage_model-a
+            dut_port: eth0
+        phy:
+          phy0:
+            band: 2
+        serial:
+          ttyUSB0:
+            dut_name: garage_model-f
+      garage2:
+        host: 192.168.78.151
+        trunk_ports: []
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+        ethernet:
+          lan1:
+            dut_name: garage_model-c
+            dut_port: eth0
+          lan2:
+            dut_name: garage_model-c
+            dut_port: eth0
+          lan3:
+            dut_name: garage_model-b
+            dut_port: eth1
+          lan4:
+            dut_name: garage_model-f
+            dut_port: eth0
+        phy:
+          phy0:
+            band: 2
+          phy1:
+            band: 5
+        serial: {}
+  office:
+    tunneling_pod: office1
+    pods:
+      office1:
+        host: 192.168.78.98
+        trunk_ports: []
+        wan_bridge:
+          name: br-lan
+          members:
+            - wan
+            - mesh0
+            - wl0-ap0
+        ethernet:
+          lan1:
+            dut_name: office_model-a
+            dut_port: eth0
+          lan2:
+            dut_name: office_model-a
+            dut_port: eth1
+          lan3:
+            dut_name: office_model-j
+            dut_port: eth0
+          lan4:
+            dut_name: office_model-j
+            dut_port: eth1
+        phy:
+          phy0:
+            band: 2
+        serial: {}
+
+power:
+  garage_model-f:
+    host: 192.168.78.130
+    type: tasmota
+  garage_model-b:
+    host: 192.168.78.26
+    type: tasmota
+  garage_model-a:
+    host: 192.168.78.93
+    type: tasmota
+  garage_model-c:
+    host: 192.168.78.199
+    type: tasmota
+  garage_model-e:
+    host: 192.168.78.114
+    type: tasmota
+  bedroom_model-h:
+    host: 192.168.78.112
+    type: tasmota
+  bedroom_model-f:
+    host: 192.168.78.165
+    type: tasmota
+  bedroom_model-i:
+    host: 192.168.78.168
+    type: tasmota
+  office_model-a:
+    host: 192.168.78.43
+    type: tasmota
+  office_model-j:
+    host: 192.168.78.9
+    type: tasmota
+  bedroom_model-g:
+    host: 192.168.78.8
+    type: tasmota
+  bedroom_model-d:
+    host: 192.168.78.129
+    type: tasmota
