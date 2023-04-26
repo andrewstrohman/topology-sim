@@ -188,7 +188,7 @@ class GeneratedConfig:
 
     def add_bridge_to_sites(self, bridge, bridge_config, sorted_bridge_sites):
         """
-        Interconnected bridge across member sites
+        Interconnected bridge across sites
         """
         for site in sorted_bridge_sites:
             for pod in self.hardware["sites"][site]["pods"]:
