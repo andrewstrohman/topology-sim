@@ -144,27 +144,12 @@ def create_tunnel(tunnel_config, hardware, ret):
     TUNNEL_NUM += 1
 
 
-def add_pod_to_gen_config(pod, pod_info, ret):
-    """
-    Include a pod in the generated config
-    """
-    pod_config = {
-        "bridges": {},
-        "tunnels": {},
-        "namespaces": {},
-        "veth_pairs": {},
-    }
-    ret[pod] = copy.deepcopy(pod_config)
-    ret[pod]["wan_bridge"] = copy.deepcopy(pod_info["wan_bridge"])
-    ret[pod]["trunk_ports"] = copy.deepcopy(pod_info["trunk_ports"])
-
-
 def get_bridge_name(configured_bridge_name, bridge_config, hardware):
     """
     Determine the correct bridge name.
     Don't use the bridge name supplied by the user
     if they want WAN access through the bridge. Instead,
-    use return the name of the WAN bridge
+    use/return the name of the WAN bridge
     """
     # default to the user configured bridge name
     bridge_name = configured_bridge_name
@@ -175,72 +160,43 @@ def get_bridge_name(configured_bridge_name, bridge_config, hardware):
     return bridge_name
 
 
-def gen_config(config, hardware):  # noqa: C901
+class GeneratedConfig:
     """
-    Generate an intermediate config from the administrator defined
-    hardware config and the user config. This intermediate config
-    is used by the changer script on the pods to set the system's
-    configuration
+    Used to construct the intermediate config
     """
-    # pylint: disable=too-many-locals,too-many-branches
-    global VETH_NUM  # pylint: disable=global-statement
-    pod_to_site = {}
-    bridge_to_vlan = {}
-    vlan_number = 1
-    ret = {}
-    for site, site_info in hardware["sites"].items():
-        for pod, pod_info in site_info["pods"].items():
-            add_pod_to_gen_config(pod, pod_info, ret)
-            pod_to_site[pod] = site
-    for bridge, bridge_config in config["bridges"].items():
-        vlan_number = vlan_number + 1
-        bridge_to_vlan[bridge] = vlan_number
-        sites = set()
-        for member in bridge_config["members"]:
-            if member["type"] == "dut":
-                member_list = "physical_members"
-                try:
-                    pod = get_pod(member, hardware)
-                except InvalidMember:
-                    print(
-                        f"Configured member name:{member['dut_name']}, port:{member['dut_port']} not found in the hardware config")  # pylint: disable=line-too-long  # noqa: E501
-                    sys.exit(1)
-            elif member["type"] == "sim_wired_client":
-                member_list = "virtual_members"
-                pod = member["pod"]
+    def __init__(self, hardware):
+        self.pod_to_site = {}
+        self.bridge_to_vlan = {}
+        self.vlan_number = 1
+        self.config = {}
+        self.hardware = hardware
 
-            sites.add(pod_to_site[pod])
-            bridge_name = get_bridge_name(bridge, bridge_config, hardware)
-            if bridge_name not in ret[pod]["bridges"]:
-                ret[pod]["bridges"][bridge_name] = {
-                    "vid": vlan_number if bridge_name == bridge else 1,
-                    "physical_members": [],
-                    "virtual_members": [],
-                }
-            ret[pod]["bridges"][bridge_name][member_list].append(
-                get_netdev(member, hardware))
+    def add_pod(self, pod, pod_info, site):
+        """
+        Include a pod in the generated config
+        """
+        pod_config = {
+            "bridges": {},
+            "tunnels": {},
+            "namespaces": {},
+            "veth_pairs": {},
+        }
+        self.config[pod] = copy.deepcopy(pod_config)
+        self.config[pod]["wan_bridge"] = copy.deepcopy(pod_info["wan_bridge"])
+        self.config[pod]["trunk_ports"] = copy.deepcopy(pod_info["trunk_ports"])
+        self.pod_to_site[pod] = site
 
-            if member["type"] == "sim_wired_client":
-                next_veth = VETH_NUM + 1
-                ret[pod]["veth_pairs"][f"veth{VETH_NUM}"] = f"veth{next_veth}"
-                VETH_NUM = next_veth
-                ret[pod]["namespaces"][member["namespace"]] = {
-                    "client_type": "wired", "port": f"veth{VETH_NUM}"
-                }
-                VETH_NUM += 1
-                NAMESPACE_TO_POD[member["namespace"]] = pod
-        if bridge_config["wan"]:
-            sites.add(pod_to_site[bridge_config["wan"]])
-
-        sorted_bridge_sites = sorted(list(sites))
-
+    def add_bridge_to_sites(self, bridge, bridge_config, sorted_bridge_sites):
+        """
+        Interconnected bridge across member sites
+        """
         for site in sorted_bridge_sites:
-            for pod, pod_info in hardware["sites"][site]["pods"].items():
+            for pod in self.hardware["sites"][site]["pods"]:
                 bridge_name = get_bridge_name(
-                    bridge, bridge_config, hardware)
-                if bridge_name not in ret[pod]["bridges"]:
-                    ret[pod]["bridges"][bridge_name] = {
-                        "vid": bridge_to_vlan[bridge] if bridge_name == bridge else 1,
+                    bridge, bridge_config, self.hardware)
+                if bridge_name not in self.config[pod]["bridges"]:
+                    self.config[pod]["bridges"][bridge_name] = {
+                        "vid": self.bridge_to_vlan[bridge] if bridge_name == bridge else 1,
                         "physical_members": [],
                         "virtual_members": [],
                     }
@@ -248,17 +204,81 @@ def gen_config(config, hardware):  # noqa: C901
         for index, site1 in enumerate(sorted_bridge_sites):
             for site2 in sorted_bridge_sites[index + 1:]:
                 site1_bridge = get_bridge_name(
-                    bridge, bridge_config, hardware)
+                    bridge, bridge_config, self.hardware)
                 site2_bridge = get_bridge_name(
-                    bridge, bridge_config, hardware)
+                    bridge, bridge_config, self.hardware)
                 create_tunnel(TunnelConfig(site1, site2, site1_bridge, site2_bridge),
-                              hardware, ret)
+                              self.hardware, self.config)
+
+    def add_bridge_config(self, bridge, bridge_config):
+        """
+        Add a bridge's config to the self.generated_config
+        """
+        global VETH_NUM  # pylint: disable=global-statement
+        # each bridge is assigned a globally unique vlan number
+        self.vlan_number = self.vlan_number + 1
+        self.bridge_to_vlan[bridge] = self.vlan_number
+        sites = set()
+        for member in bridge_config["members"]:
+            if member["type"] == "dut":
+                member_list = "physical_members"
+                try:
+                    pod = get_pod(member, self.hardware)
+                except InvalidMember:
+                    print(
+                        f"Configured member name:{member['dut_name']}, port:{member['dut_port']} not found in the self.hardware config")  # pylint: disable=line-too-long  # noqa: E501
+                    sys.exit(1)
+            elif member["type"] == "sim_wired_client":
+                member_list = "virtual_members"
+                pod = member["pod"]
+
+            sites.add(self.pod_to_site[pod])
+            bridge_name = get_bridge_name(bridge, bridge_config, self.hardware)
+            if bridge_name not in self.config[pod]["bridges"]:
+                self.config[pod]["bridges"][bridge_name] = {
+                    "vid": self.vlan_number if bridge_name == bridge else 1,
+                    "physical_members": [],
+                    "virtual_members": [],
+                }
+            self.config[pod]["bridges"][bridge_name][member_list].append(
+                get_netdev(member, self.hardware))
+
+            if member["type"] == "sim_wired_client":
+                next_veth = VETH_NUM + 1
+                self.config[pod]["veth_pairs"][f"veth{VETH_NUM}"] = f"veth{next_veth}"
+                VETH_NUM = next_veth
+                self.config[pod]["namespaces"][member["namespace"]] = {
+                    "client_type": "wired", "port": f"veth{VETH_NUM}"
+                }
+                VETH_NUM += 1
+                NAMESPACE_TO_POD[member["namespace"]] = pod
+        if bridge_config["wan"]:
+            sites.add(self.pod_to_site[bridge_config["wan"]])
+
+        self.add_bridge_to_sites(bridge, bridge_config, sorted(list(sites)))
+
+
+def gen_config(config, hardware):
+    """
+    Generate an intermediate config from the administrator defined
+    hardware config and the user config. This intermediate config
+    is used by the changer script, which is run on the pods, to
+    set the system's network configuration.
+    """
+    generated_config = GeneratedConfig(hardware)
+    # first, create a place holder for each pod in the generated config
+    for site, site_info in hardware["sites"].items():
+        for pod, pod_info in site_info["pods"].items():
+            generated_config.add_pod(pod, pod_info, site)
+    # now, go bridge by bridge, filling the generated config in
+    for bridge, bridge_config in config["bridges"].items():
+        generated_config.add_bridge_config(bridge, bridge_config)
 
     for swc in config["sim_wireless_clients"]:
-        ret[swc["pod"]]["namespaces"][swc["namespace"]] = \
+        generated_config.config[swc["pod"]]["namespaces"][swc["namespace"]] = \
             {"client_type": "wireless", "phy": swc["phy"]}
         NAMESPACE_TO_POD[swc["namespace"]] = swc["pod"]
-    return ret
+    return generated_config.config
 
 
 def create_tarball(pod, pod_config):
@@ -360,10 +380,12 @@ def get_args():
 
 def do_create(hardware, config):
     """
-    Create the configured virtual L2 config
+    Synthesize the configured virtual L2 config
     """
     generated = gen_config(config, hardware)
+    # power on the DUTS being tested
     do_power(config, hardware)
+
     pids = {}
     for _, site_info in hardware["sites"].items():
         for pod, pod_info in site_info["pods"].items():
