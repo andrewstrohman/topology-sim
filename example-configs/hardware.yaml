@@ -111,7 +111,8 @@ sites:
     pods:
       garage1:
         host: 192.168.78.48
-        trunk_ports: []
+        trunk_ports:
+          - wan
         wan_bridge:
           name: br-lan
           members:
@@ -138,7 +139,8 @@ sites:
             dut_name: garage_model-f
       garage2:
         host: 192.168.78.151
-        trunk_ports: []
+        trunk_ports:
+          - wan
         wan_bridge:
           name: br-lan
           members:
@@ -149,7 +151,7 @@ sites:
             dut_port: eth0
           lan2:
             dut_name: garage_model-c
-            dut_port: eth0
+            dut_port: eth1
           lan3:
             dut_name: garage_model-b
             dut_port: eth1
