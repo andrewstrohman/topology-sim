@@ -99,6 +99,13 @@ def del_interface(if_name):
 
 def del_namespace(name):
     """Delete a namespace specified by parameter 'name'"""
+    # work around: move any phys into the default namespace
+    # or else the phys will be "lost" when the ns is deleted
+    list_out = exec_cmd([IP, "netns", "exec", name, "iw", "list"])
+    for line in list_out.split("\n"):
+        if line.startswith("Wiphy"):
+            exec_cmd([IP, "netns", "exec", name, "iw", 'phy', line.split()[1],
+                      "set", "netns", "1"])
     exec_cmd([IP, "netns", "del", name])
 
 
