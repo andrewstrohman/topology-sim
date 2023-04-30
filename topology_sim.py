@@ -302,9 +302,22 @@ def create_tarball(pod, pod_config):
     return tarball_name
 
 
-def set_power(host, state):
+class TPLinkError(Exception):
+    """Raised when configuration of a tp-link power plug fails"""
+
+
+def tp_link_set_power(host, state):
     """
-    Power on/off a device controlled by a smart plug host
+    Power on/off a device controlled by a tp-link smart plug host
+    """
+    out = os.popen(f"./hs100 {host} {state}").read()
+    if '{"system":{"set_relay_state":{"err_code":0}}}' not in out:
+        raise TPLinkError
+
+
+def tasmota_set_power(host, state):
+    """
+    Power on/off a device controlled by a tasmota smart plug host
     """
     with urllib.request.urlopen(f"http://{host}/cm?cmnd=Power%20{state}") as opened:
         opened.read()
@@ -318,10 +331,19 @@ def power_off(dut, power_config):
         raise InvalidDUT(f"dut:{dut} not found in power config")
 
     host = power_config[dut]["host"]
-    try:
-        set_power(host, "off")
-    except urllib.error.URLError:
-        print(f"unable to reach smart plug: {host} for dut: {dut}")
+    host_type = power_config[dut]["type"]
+    if host_type == "tasmota":
+        try:
+            tasmota_set_power(host, "off")
+        except urllib.error.URLError:
+            print(f"unable to reach smart plug: {host} for dut: {dut}")
+    elif host_type == "tp-link":
+        try:
+            tp_link_set_power(host, "off")
+        except TPLinkError:
+            print(f"unable to reach smart plug: {host} for dut: {dut}")
+    else:
+        print(f"unknown power plug type: {host_type} for dut: {dut}")
 
 
 def power_on(dut, power_config):
@@ -332,10 +354,19 @@ def power_on(dut, power_config):
         raise InvalidDUT(f"dut:{dut} not found in power config")
 
     host = power_config[dut]["host"]
-    try:
-        set_power(host, "on")
-    except urllib.error.URLError:
-        print(f"unable to reach smart plug: {host} for dut: {dut}")
+    host_type = power_config[dut]["type"]
+    if host_type == "tasmota":
+        try:
+            tasmota_set_power(host, "on")
+        except urllib.error.URLError:
+            print(f"unable to reach smart plug: {host} for dut: {dut}")
+    elif host_type == "tp-link":
+        try:
+            tp_link_set_power(host, "on")
+        except TPLinkError:
+            print(f"unable to reach smart plug: {host} for dut: {dut}")
+    else:
+        print(f"unknown power plug type: {host_type} for dut: {dut}")
 
 
 def do_power(config, hardware):

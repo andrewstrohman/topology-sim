@@ -2,3 +2,4 @@
 /hardware.yaml
 *.swp
 __pycache__
+/hs100
