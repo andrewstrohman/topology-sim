@@ -413,6 +413,11 @@ def do_create(hardware, config):
     """
     Synthesize the configured virtual L2 config
     """
+    try:
+        os.makedirs("logs")
+    except FileExistsError:
+        pass
+
     generated = gen_config(config, hardware)
     # power on the DUTS being tested
     do_power(config, hardware)
@@ -423,6 +428,10 @@ def do_create(hardware, config):
             create_tarball(pod, generated[pod])
             pid = os.fork()
             if not pid:
+                new_stdout = os.open(f"logs/{pod}.stdout", os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+                os.dup2(new_stdout, 1)
+                new_stderr = os.open(f"logs/{pod}.stderr", os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+                os.dup2(new_stderr, 2)
                 os.execl("./connect.expect", "connect.expect",
                          "configure", pod_info["host"], pod)
             else:
