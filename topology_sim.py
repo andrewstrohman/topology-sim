@@ -391,7 +391,6 @@ def do_power(config, hardware):
             power_on(dut, power_conf)
         else:
             power_off(dut, power_conf)
-    print("attempted to power off all hosts")
 
 
 def get_args():
