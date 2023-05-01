@@ -31,7 +31,7 @@ bridges:
       - type: dut
         dut_name: bedroom_model-g
         dut_port: eth0
-    wan: bedroom4
+    wan: bedroom
 sim_wireless_clients:
   - pod: bedroom4
     phy: phy1

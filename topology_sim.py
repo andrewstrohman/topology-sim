@@ -144,7 +144,7 @@ def create_tunnel(tunnel_config, hardware, ret):
     TUNNEL_NUM += 1
 
 
-def get_bridge_name(configured_bridge_name, bridge_config, hardware):
+def get_bridge_name(pod, configured_bridge_name, bridge_config, hardware):
     """
     Determine the correct bridge name.
     Don't use the bridge name supplied by the user
@@ -153,10 +153,9 @@ def get_bridge_name(configured_bridge_name, bridge_config, hardware):
     """
     # default to the user configured bridge name
     bridge_name = configured_bridge_name
-    if bridge_config["wan"]:
-        pod_name = bridge_config["wan"]
-        site = get_pod_site(pod_name, hardware)
-        bridge_name = hardware["sites"][site]["pods"][pod_name]["wan_bridge"]["name"]
+    site = get_pod_site(pod, hardware)
+    if bridge_config["wan"] == site:
+        bridge_name = hardware["sites"][site]["pods"][pod]["wan_bridge"]["name"]
     return bridge_name
 
 
@@ -193,7 +192,7 @@ class GeneratedConfig:
         for site in sorted_bridge_sites:
             for pod in self.hardware["sites"][site]["pods"]:
                 bridge_name = get_bridge_name(
-                    bridge, bridge_config, self.hardware)
+                    pod, bridge, bridge_config, self.hardware)
                 if bridge_name not in self.config[pod]["bridges"]:
                     self.config[pod]["bridges"][bridge_name] = {
                         "vid": self.bridge_to_vlan[bridge] if bridge_name == bridge else 1,
@@ -204,8 +203,10 @@ class GeneratedConfig:
         for index, site1 in enumerate(sorted_bridge_sites):
             for site2 in sorted_bridge_sites[index + 1:]:
                 site1_bridge = get_bridge_name(
+                    self.hardware["sites"][site1]["tunneling_pod"],
                     bridge, bridge_config, self.hardware)
                 site2_bridge = get_bridge_name(
+                    self.hardware["sites"][site2]["tunneling_pod"],
                     bridge, bridge_config, self.hardware)
                 create_tunnel(TunnelConfig(site1, site2, site1_bridge, site2_bridge),
                               self.hardware, self.config)
@@ -233,7 +234,7 @@ class GeneratedConfig:
                 pod = member["pod"]
 
             sites.add(self.pod_to_site[pod])
-            bridge_name = get_bridge_name(bridge, bridge_config, self.hardware)
+            bridge_name = get_bridge_name(pod, bridge, bridge_config, self.hardware)
             if bridge_name not in self.config[pod]["bridges"]:
                 self.config[pod]["bridges"][bridge_name] = {
                     "vid": self.vlan_number if bridge_name == bridge else 1,
@@ -253,7 +254,7 @@ class GeneratedConfig:
                 VETH_NUM += 1
                 NAMESPACE_TO_POD[member["namespace"]] = pod
         if bridge_config["wan"]:
-            sites.add(self.pod_to_site[bridge_config["wan"]])
+            sites.add(bridge_config["wan"])
 
         self.add_bridge_to_sites(bridge, bridge_config, sorted(list(sites)))
 
