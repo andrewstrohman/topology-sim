@@ -71,7 +71,7 @@ def clean_wan_bridge_vlans(conf):
         if port_info["ifname"] == conf["wan_bridge"]["name"]:
             for vlan_info in port_info["vlans"]:
                 if vlan_info["vlan"] != 1:
-                    # TODO: this _self variabnt assumes that the wan bridge
+                    # TODO: this _self variant assumes that the wan bridge
                     # is a physical device, so this probably
                     # won't work when the wan bridge is software-only
                     # ie. a single pod site with no Internet connection
@@ -80,12 +80,14 @@ def clean_wan_bridge_vlans(conf):
             break
 
 
-def prohibit_gre_forwarding():
+def prohibit_gre_forwarding(conf):
     """
     For all sites involved in a layer 2 segment, we have a full mesh
     of VPN tunnels. When there are more than 2 sites, this there would
     be a loop without this
     """
+    if not conf["tunnels"]:
+        return
     if '-i gretap+ -o gretap+ -j DROP' not in exec_cmd(
             [EBTABLES, "-L", "FORWARD", "-t", "filter"]):
         exec_cmd([EBTABLES, "-A", "FORWARD", "-i",
@@ -101,6 +103,8 @@ def del_namespace(name):
     """Delete a namespace specified by parameter 'name'"""
     # work around: move any phys into the default namespace
     # or else the phys will be "lost" when the ns is deleted
+    # This still works on when the pod is just a switch.
+    # iw doesn't exist, but neither will wireless phys
     list_out = exec_cmd([IP, "netns", "exec", name, "iw", "list"])
     for line in list_out.split("\n"):
         if line.startswith("Wiphy"):
@@ -285,7 +289,7 @@ def main():
     clean_configuration(config)
 
     # Do not allow forwarding from one gre tunnel to another
-    prohibit_gre_forwarding()
+    prohibit_gre_forwarding(config)
 
     wan = config["wan_bridge"]["name"]
     # Enable vlan filtering for the WAN bridge
