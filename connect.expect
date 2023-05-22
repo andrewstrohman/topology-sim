@@ -2,24 +2,29 @@
 
 set type [lindex $argv 0];
 set host [lindex $argv 1];
-set tty [lindex $argv 2];
+set console_id_type [lindex $argv 2];
 set namespace [lindex $argv 2];
 set pod_name [lindex $argv 2];
+set console_id [lindex $argv 3];
+set serial_script "serial-to-tty.py"
 
 
 if {$type == "configure"} {
 	spawn scp /tmp/$pod_name.tar.gz root@$host:/tmp
+	expect "@"
+} elseif {$type == "serial"} {
+	spawn scp $serial_script root@$host:/tmp
 	expect "@"
 }
 
 spawn ssh $host -l root
 expect "root@"
 if {$type == "serial"} {
-	send "screen -x $tty\r"
+	send "screen -x $console_id_type-$console_id\r"
 	expect -re "screen.*root@"
 	set command_output $expect_out(0,string)
 	if {[string match "*There is no screen to be attached matching*" $command_output]} {
-		send "screen -S $tty /dev/$tty 115200\r"
+		send "screen -S $console_id_type-$console_id /dev/\$(/tmp/$serial_script $console_id_type $console_id) 115200\r"
 	}
 	interact
 } elseif {$type == "ns"} {

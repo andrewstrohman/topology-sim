@@ -39,10 +39,13 @@ def serial_for_dut(dut_name, hardware):
     """
     for _, site_config in hardware["sites"].items():
         for _, pod_config in site_config["pods"].items():
-            if "serial" in pod_config:
-                for serial, serial_info in pod_config["serial"].items():
-                    if serial_info["dut_name"] == dut_name:
-                        return pod_config["host"], serial
+            if "console" in pod_config:
+                console_config = pod_config["console"]
+                for id_type in ["serial", "tty"]:
+                    if id_type in console_config:
+                        for ID, id_info in console_config[id_type].items():
+                            if id_info["dut_name"] == dut_name:
+                                return pod_config["host"], id_type, ID
     raise InvalidDUT(dut_name)
 
 
@@ -467,8 +470,8 @@ def main():
                                                 hardware)]["pods"][pod]["host"],
                  args.namespace)
     elif args.command == "serial":
-        host, tty = serial_for_dut(args.dut, hardware)
-        os.execl("./connect.expect", "connect.expect", "serial", host, tty)
+        host, id_type, ID = serial_for_dut(args.dut, hardware)
+        os.execl("./connect.expect", "connect.expect", "serial", host, id_type, ID)
     elif args.command == "toggle_power":
         power_off(args.dut, hardware["power"])
         # Remove power for at least 2 seconds
