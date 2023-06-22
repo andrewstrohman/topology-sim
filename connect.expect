@@ -24,7 +24,7 @@ if {$type == "serial"} {
 	expect -re "screen.*root@"
 	set command_output $expect_out(0,string)
 	if {[string match "*There is no screen to be attached matching*" $command_output]} {
-		send "screen -S $console_id_type-$console_id /dev/\$(/tmp/$serial_script $console_id_type $console_id) 115200\r"
+		send "screen -S $console_id_type-$console_id -h 100000 /dev/\$(/tmp/$serial_script $console_id_type $console_id) 115200\r"
 	}
 	interact
 } elseif {$type == "ns"} {
