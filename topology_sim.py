@@ -483,6 +483,10 @@ def main():
         power_config = hardware["power"]
         for dut in power_config:
             power_off(dut, power_config)
+    elif args.command == "power_on_all":
+        power_config = hardware["power"]
+        for dut in power_config:
+            power_on(dut, power_config)
     elif args.command == "power_on":
         power_on(args.dut, hardware["power"])
     else:
