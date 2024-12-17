@@ -10,10 +10,10 @@ set serial_script "serial-to-tty.py"
 
 
 if {$type == "configure"} {
-	spawn scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" /tmp/$pod_name.tar.gz root@$host:/tmp
+	spawn scp -O -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" /tmp/$pod_name.tar.gz root@$host:/tmp
 	expect "@"
 } elseif {$type == "serial"} {
-	spawn scp -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" $serial_script root@$host:/tmp
+	spawn scp -O -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" $serial_script root@$host:/tmp
 	expect "@"
 }
 
