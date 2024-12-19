@@ -172,12 +172,6 @@ def del_bridge(name, conf):
         exec_cmd([BRCTL, "delbr", name])
 
 
-def turn_off_learning(member_name):
-    """
-    Disable learning. Otherwise we won't handle roaming correctly
-    """
-    exec_cmd([BRIDGE, "link", "set", "dev", member_name, "learning", "off", "master"])
-
 def add_bridge_if(bridge_name, member_name):
     """
     Adds a member to a bridge if it's not already apart
@@ -314,7 +308,6 @@ def main():
         if bridge != wan:
             for trunk_port in config["trunk_ports"]:
                 allow_vlan_trunk(trunk_port, vid)
-                turn_off_learning(trunk_port)
             allow_vlan_trunk_self(wan, vid)
             vlan_if_name = add_vlan(wan, vid)
             add_bridge_if(bridge, vlan_if_name)
@@ -323,7 +316,6 @@ def main():
             add_bridge_if(wan, member)
             remove_vlan_filter(member, 1)
             set_pvid(member, vid)
-            turn_off_learning(member)
         for member in virtual_members:
             add_bridge_if(bridge, member)
 
